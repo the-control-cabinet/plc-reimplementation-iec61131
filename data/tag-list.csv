@@ -1,0 +1,5 @@
+tag,type,address,description,program
+DI_LowLevelOK,BOOL,%IX0.0,Low-level float OK,Interlocks
+DI_FlowProven,BOOL,%IX0.1,Flow proving input,PumpStateMachine
+DO_PumpA,BOOL,%QX0.0,Pump A run,DutyStandby
+DO_PumpB,BOOL,%QX0.1,Pump B run,DutyStandby
