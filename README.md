@@ -19,6 +19,82 @@
 
 ---
 
+## Status at a glance
+
+| Item | Status |
+|---|---|
+| Program structure by language | 📐 Designed ([doc 01](docs/01-programs.md)) |
+| Platforms and test approach | 📐 Designed ([doc 02](docs/02-platforms-and-testing.md)) |
+| Three-platform comparison framework | 📐 Drafted ([doc 03](docs/03-three-platform-comparison.md)); results after the build |
+| Tag list | 🚧 Started ([data/tag-list.csv](data/tag-list.csv)) |
+| Source sequences (duty/standby, interlocks, PID) | 📐 Designed on the [rig](https://github.com/the-control-cabinet/din-rail-rig-duty-standby-interlocks) |
+| CODESYS build, TIA Portal + PLCSIM, Modbus client, WebVisu | ⏳ To do |
+
+## Why re-implement in a PLC
+
+BMS and PLC work overlap more every year: packaged plant (chillers, AHUs, boilers) runs on PLCs, and many controls engineers move between the two. IEC 61131-3 defines the five PLC languages; four of them suit different parts of the same problem, so the rig's logic is split across them deliberately, each where it's the natural choice.
+
+## One problem, four languages
+
+```mermaid
+flowchart LR
+    subgraph RIG["Rig sequences"]
+        I["Interlocks (#9)"]
+        SM["Pump state machine (#9)"]
+        DS["Duty/standby (#7)"]
+        PID["Flow + thermal PID (#8)"]
+    end
+    I --> LD["Ladder (LD)<br/>as read on site"]
+    SM --> SFC["SFC<br/>steps + transitions"]
+    DS --> ST["Structured Text<br/>run-hour arithmetic"]
+    PID --> FBD["FBD<br/>PID block, anti-windup"]
+    LD & SFC & ST & FBD --> T["Same test record T1-T5<br/>as the ESP32 and Trend versions"]
+```
+
+| Program | Language | Content |
+|---|---|---|
+| `Interlocks` | **LD** | Low-level permissive, hand/off/auto, lockout latch with reset, pilot lights |
+| `PumpStateMachine` | **SFC** | OFF / START / PROVING / RUN / FAULT / LOCKOUT; transitions on demand, proof, timers |
+| `DutyStandby` | **ST** | Lead selection by run hours, weekly rotation, failover, idle-pump exercise |
+| `FlowLoop`, `ThermalLoop` | **FBD** | Standard PID block, output limits, anti-windup, bumpless manual/auto transfer |
+| `Alarms` | ST / FBD | Latching, acknowledgement, priority per the [alarm strategy](https://github.com/the-control-cabinet/alarm-and-trend-strategy) |
+| `ModbusIO` | Configuration | Modbus client reading the [ESP32 register map](https://github.com/the-control-cabinet/esp32-modbus-server-plant-points) |
+
+## Tag list (start)
+
+| Tag | Type | Address | Description | Program |
+|---|---|---|---|---|
+| `DI_LowLevelOK` | BOOL | %IX0.0 | Low-level float OK | Interlocks |
+| `DI_FlowProven` | BOOL | %IX0.1 | Flow proving input | PumpStateMachine |
+| `DO_PumpA` | BOOL | %QX0.0 | Pump A run | DutyStandby |
+| `DO_PumpB` | BOOL | %QX0.1 | Pump B run | DutyStandby |
+
+**Conventions:** a tag list (I/O, internal, HMI) with naming rules; one program per function; a comment on every network and step; constants for every setpoint and timer.
+
+## Platforms
+
+| Platform | Use |
+|---|---|
+| **CODESYS** | All four languages, soft PLC, WebVisu HMI page, Modbus client |
+| **Siemens TIA Portal + PLCSIM** | The interlocks and state machine again, in the Siemens environment |
+| Optional hardware | A small secondhand PLC (LOGO! 8 or S7-1200) driving the rig's real pumps |
+
+## The comparison it completes
+
+| Aspect | ESPHome (ESP32) | Trend IQ411 | IEC 61131-3 PLC |
+|---|---|---|---|
+| Programming model | YAML + C++ lambdas | Strategy modules in SET | LD / SFC / ST / FBD |
+| State machines | Hand-coded | Logic + latches | SFC: native |
+| PID | PID climate | Loop module | PID function block |
+| Diagnostics | Logs, HA history | SET monitoring | Online monitoring, forcing, trace |
+| Change control | Git (YAML) | Strategy files | PLCopen XML in Git |
+
+Results (engineering hours, blocks or lines, test pass rates, observations) are filled in after each build.
+
+## Change control
+
+PLCopen XML exports committed per change, with screenshots of each network and step for readers without the software.
+
 ## Documents
 
 | Doc | Contents |
