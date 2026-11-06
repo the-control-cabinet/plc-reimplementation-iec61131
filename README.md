@@ -77,7 +77,7 @@ flowchart LR
 |---|---|
 | **CODESYS** | All four languages, soft PLC, WebVisu HMI page, Modbus client |
 | **Siemens TIA Portal + PLCSIM** | The interlocks and state machine again, in the Siemens environment |
-| Optional hardware | A small secondhand PLC (LOGO! 8 or S7-1200) driving the rig's real pumps |
+| Optional hardware (low priority) | A secondhand **S7-1200 CPU 1214C DC/DC/DC** (24 V supply, transistor outputs; not the AC/DC/RLY variant, which takes 230 V mains) on the rig's row 2, powered from the existing 24 V PSU, driving the real pumps. Software-only covers the PLC literacy most BMS roles need; hardware adds commissioning on real I/O |
 
 ## The comparison it completes
 
@@ -110,6 +110,7 @@ PLCopen XML exports committed per change, with screenshots of each network and s
 - [ ] WebVisu HMI page and Modbus client to the ESP32
 - [ ] TIA Portal + PLCSIM re-implementation
 - [ ] Three-platform comparison completed with results
+- [ ] Optional: the same programs on a physical S7-1200; then read by Niagara through an S7 driver (third-party S7 drivers typically need PUT/GET access enabled and non-optimised data blocks on the S7-1200)
 
 ## Skills demonstrated (as built)
 | Skill | Evidence |
